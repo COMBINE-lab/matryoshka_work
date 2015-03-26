@@ -1,0 +1,13 @@
+4b1cef760f62c64ad9e18c4fab1f2bcb *DESCRIPTION
+6f0fa15ade76bc9082dfd333575e7a5a *NAMESPACE
+bbbe24e6ee96d1930dc9ff031abdb619 *R/HiCseg_linkC_R.R
+b33776f67f3c8a8cf132f24d91ec5ac1 *data/matrix.rda
+29fcb22b48284b0abf1ed9a9dd99002c *inst/doc/HiCseg.Rnw
+218fa0f6639c589b0a255f8ebebe826f *inst/doc/HiCseg.pdf
+91b60044a25bde9302dc6313a17b3fda *man/HiCseg-package.Rd
+edd41b22efa32a3bf11f3ef506b8d81e *man/HiCseg_linkC_R.Rd
+b0d8f344a4c57f33f31c8741857e01ef *man/matrix.Rd
+e345f1d95268f40dc43593e7d767ab81 *src/HiCseg_linkR.c
+3534ea147619c6c5e8d8cfc016942ce6 *src/Makevars
+29fcb22b48284b0abf1ed9a9dd99002c *vignettes/HiCseg.Rnw
+babd76302878b837fa0e635d7871002c *vignettes/vignette_refs.bib
