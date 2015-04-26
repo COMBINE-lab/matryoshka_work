@@ -32,7 +32,7 @@ int Fonction_HiC_R(int *taille,int *K,char** distrib,double* matrice,int* tchap,
        double **y, **Delta;
        double **Exterieur, **T, **D, **R, **Tcarr, **Dcarr, **Rcarr;
        double **I, **t_matrice;
-       
+       double **likelihoods, **Delta_filtered, **Exterieur_filtered, **DEratio; //Laraib
        // Allocation memoire pour chacune des matrices et pour chaque vecteur
        y=(double **)malloc(sizeof(double *)*taille_matrice);
 
@@ -61,10 +61,14 @@ int Fonction_HiC_R(int *taille,int *K,char** distrib,double* matrice,int* tchap,
 	 }
        I=(double **)malloc(sizeof(double *)*Kmax);
        t_matrice=(double **)malloc(sizeof(double *)*(Kmax-1));
+       Delta_filtered=(double **)malloc(sizeof(double *)*(Kmax-1)); //Laraib
+       Exterieur_filtered=(double **)malloc(sizeof(double *)*(Kmax-1)); //Laraib
        for (i=0;i<Kmax-1;i++)
 	 {
 	   *(I+i)=(double *)malloc(sizeof(double)*taille_matrice);
 	   *(t_matrice+i)=(double *)malloc(sizeof(double)*taille_matrice);
+	   *(Delta_filtered+i)=(double *)malloc(sizeof(double)*taille_matrice); //Laraib
+	   *(Exterieur_filtered+i)=(double *)malloc(sizeof(double)*taille_matrice); //Laraib
 	 }
        *(I+Kmax-1)=(double *)malloc(sizeof(double)*taille_matrice);
        
@@ -72,10 +76,14 @@ int Fonction_HiC_R(int *taille,int *K,char** distrib,double* matrice,int* tchap,
        J=(double *)malloc(sizeof(double)*Kmax);
        
        t_est=(double **)malloc(sizeof(double *)*Kmax);
+       likelihoods=(double **)malloc(sizeof(double *)*Kmax); //Laraib
+       DEratio=(double **)malloc(sizeof(double *)*Kmax); //Laraib
        resultats=(double **)malloc(sizeof(double *)*Kmax);
        for (i=0;i<Kmax;i++)
 	 {
 	   *(t_est+i)=(double *)malloc(sizeof(double)*Kmax);
+	   *(likelihoods+i)=(double *)malloc(sizeof(double)*Kmax); //Laraib
+	   *(DEratio+i)=(double *)malloc(sizeof(double)*Kmax); //Laraib
 	   *(resultats+i)=(double *)malloc(sizeof(double)*(Kmax+2));
 	 }
        
@@ -310,8 +318,8 @@ int Fonction_HiC_R(int *taille,int *K,char** distrib,double* matrice,int* tchap,
 	    }
 	}
       mu_hat=somme/taille_coin;
-
-      	   /////  Calcul des sommes dans des trapezes
+      
+      	   /////  Calcul des sommes dans des trapezes	
 	   T[0][0]=y[0][0];
 	   D[0][0]=y[0][0];
 	   Tcarr[0][0]=pow(y[0][0],2);
@@ -335,6 +343,7 @@ int Fonction_HiC_R(int *taille,int *K,char** distrib,double* matrice,int* tchap,
 	       D[0][k]=T[k][k];
 	       Dcarr[0][k]=Tcarr[k][k];
 	       mu=D[0][k]/((pow(k+1,2)+k+1)/2);
+	       
 	       Delta[0][k]=-(Dcarr[0][k]-D[0][k]*mu);
 	       Delta[k][k]=0;
 	     }
@@ -407,6 +416,8 @@ int Fonction_HiC_R(int *taille,int *K,char** distrib,double* matrice,int* tchap,
 		 {
 		   I[i][j] = -1E100;
 		   t_matrice[i][j] = -1;
+		   Delta_filtered[i][j] = -1; //Laraib
+		   Exterieur_filtered[i][j] = -1; //Laraib
 		 }
 	     }
       
@@ -422,6 +433,10 @@ int Fonction_HiC_R(int *taille,int *K,char** distrib,double* matrice,int* tchap,
 	     }
 	   I[0][taille_matrice-1] = Delta[0][taille_matrice-1];
 	   
+
+	   FILE *opf;
+	   opf = fopen("file.txt", "w");
+
 	   for (k=1; k<Kmax-1; k++)
 	     {
 	       for (l=k; l<taille_matrice; l++)
@@ -444,12 +459,37 @@ int Fonction_HiC_R(int *taille,int *K,char** distrib,double* matrice,int* tchap,
 			   max = vecteur[u];
 			   ind_max = u;
 			 }
+			 //printf("%f\t", vecteur[u]);
 		     }
+		     //printf("%f\n", ind_max);
+		     //getchar();
 		   I[k][l] = max;
 		   t_matrice[k-1][l] = ind_max;
+		   Delta_filtered[k-1][l] = Delta[ind_max][l]; //Laraib
+		   Exterieur_filtered[k-1][l] = Exterieur[ind_max][l]; //Laraib
 		 }
+		 //Laraib
+		 	/*fprintf(opf, "NEW RECORD\n");
+		   for (i=0; i<Kmax-1; i++)
+	       {
+	       		for (j=0; j<taille_matrice; j++)
+		 		{
+		   			fprintf(opf, "%f\t", t_matrice[i][j]);
+		 		}
+	     	fprintf(opf, "\n");
+	     	}
+		   for (u=0; u<taille_matrice-1; u++){
+		   		fprintf(opf, "%f\t", vecteur[u]);
+		   }
+		   fprintf(opf, "\n");*/
+		   
+		   //}
+		   //printf("\n");
+		   //printf("\n");
+		   //Laraib
 	     }
-      
+	     
+
 	   for (i=0; i<taille_matrice-1; i++)
 	     {
 	       vecteur[i] = -1E100;
@@ -472,7 +512,22 @@ int Fonction_HiC_R(int *taille,int *K,char** distrib,double* matrice,int* tchap,
 	   I[Kmax-1][taille_matrice-1] = vecteur[ind_max];
       
 	   t_matrice[Kmax-2][taille_matrice-1] = ind_max;
-      
+
+	   Delta_filtered[Kmax-2][taille_matrice-1] = Delta[ind_max][taille_matrice-1]; //Laraib
+       Exterieur_filtered[Kmax-2][taille_matrice-1] = Exterieur[ind_max][taille_matrice-1]; //Laraib
+	   //Laraib
+	   /*fprintf(opf, "NEW RECORD\n");
+		   for (i=0; i<Kmax-1; i++)
+	       {
+	       		for (j=0; j<taille_matrice; j++)
+		 		{
+		   			fprintf(opf, "%f\t", t_matrice[i][j]);
+		 		}
+	     	fprintf(opf, "\n");
+	     	}*/
+	    //Laraib
+
+
 	   ind_max = 0;
 	   max = I[0][taille_matrice-1];
 	   for (i=0; i<Kmax; i++)
@@ -486,28 +541,89 @@ int Fonction_HiC_R(int *taille,int *K,char** distrib,double* matrice,int* tchap,
 		 }
 	     } 
   
+       // Code by Laraib
+	   /*for (k=0; k<Kmax-1; k++)
+	   {
+	   	for (l=k; l<taille_matrice; l++)
+	   	{
+	   		if (I[k][l] == -1E100)
+	   			I[k][l] = 0;
+	   	}
+	   } 
+	   for (k=0; k<Kmax-1; k++)
+	    {
+	     	printf("\n");
+	     	for (l=k; l<taille_matrice; l++)
+	     		{
+	     			if (l > k)
+	       				printf("%f\t", I[k][l]-I[k][l-1]);
+	       			else
+	       				printf("%f\t", I[k][l]);
+	       		}
+		}*/
+		// Code end by Laraib
+
+
   for (i=0;i<Kmax;i++)
     {
       for (j=0;j<Kmax;j++)
 	{
 	  t_est[i][j] = -1;
+	  likelihoods[i][j] = -1; //Laraib
+	  DEratio[i][j] = -1; //Laraib
 	}
     }
        
   for (i=0; i<Kmax; i++)
     {
       t_est[i][i] = taille_matrice - 1;
+      likelihoods[i][i] = -1E100; //Laraib
+      DEratio[i][i] = -1; //Laraib
     }
   
-  /////// Calcul des change-points /////////	
+  int index = -1; //Laraib
+  /*fprintf(opf, "%s\n", "Useful Delta");
+  for (k=0;k<Kmax-1;k++){
+  	for (l=0;l<taille_matrice;l++){
+  		//index = t_matrice[k][l];
+		//fprintf(opf, "%f\t", Delta[index][l]);
+		fprintf(opf, "%f\t", Delta_filtered[k][l]);
+	}
+	fprintf(opf, "\n");
+  }*/
+  //LARAIB
+
+
   for (kk=1; kk<Kmax; kk++)
     {
       for (k=kk-1; k>=0; k--)
 	{
+	  index = (int)t_est[kk][k+1]; //Laraib
 	  t_est[kk][k] = t_matrice[k][(int)t_est[kk][k+1]];
+	  likelihoods[kk][k] = I[k+1][index]; //Laraib
+	  DEratio[kk][k] = Exterieur_filtered[k][index]; //Laraib
 	}
     }
-  
+    //LARAIB
+    /*fprintf(opf, "%s\n", "LIKELIHOODS");
+    	for (i=0;i<Kmax;i++)
+    	{
+   	   		for (j=0;j<Kmax;j++)
+			{
+	  			fprintf(opf, "%f\t", likelihoods[i][j]-likelihoods[i][j-1]);
+			}
+			fprintf(opf, "\n");
+    	}*/
+
+	fprintf(opf, "%s\n", "LIKELIHOODS");
+	for (i=0;i<Kmax;i++)
+		 {
+		   for (j=0;j<Kmax;j++)
+		     {
+		     	fprintf(opf, "%f\t", likelihoods[i][j]);
+		     }
+		     fprintf(opf, "\n");
+		 }
   
   //////// Calcul de Kchap /////////
   
@@ -535,6 +651,11 @@ int Fonction_HiC_R(int *taille,int *K,char** distrib,double* matrice,int* tchap,
 	free(T);
 	free(D);
 	free(R);
+	free(likelihoods); //Laraib
+	free(Delta_filtered); //Laraib
+	free(Exterieur_filtered); //Laraib
+	free(DEratio); //Laraib
+	fclose(opf); //Laraib
 
   return(EXIT_SUCCESS);
      }
